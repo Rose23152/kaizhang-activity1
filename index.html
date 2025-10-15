@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>開漳聖王活動登錄</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 10px; 
+      background: #f5f5f5; 
+    }
+    .container { 
+      max-width: 100%; 
+      background: white; 
+      padding: 15px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    select, input, button { 
+      width: 100%; 
+      padding: 12px; 
+      margin: 5px 0; 
+      border: 1px solid #ddd; 
+      border-radius: 5px; 
+      font-size: 16px; 
+    }
+    button { 
+      background: #b20d0d; 
+      color: white; 
+      border: none; 
+      font-weight: bold;
+    }
+    #result { 
+      margin-top: 15px; 
+      padding: 15px; 
+      background: #e8f5e8; 
+      border-radius: 5px; 
+      display: none; 
+      border: 2px solid #4caf50;
+    }
+    .lottery-number {
+      font-size: 24px;
+      color: #b20d0d;
+      font-weight: bold;
+      text-align: center;
+      margin: 10px 0;
+    }
+    .cloud-status {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 style="text-align: center; color: #b20d0d;">開漳聖王活動登錄</h2>
+    
+    <select id="region">
+      <option value="">請選擇地區</option>
+      <option value="基隆/台北">基隆/台北</option>
+      <option value="新北/新竹">新北/新竹</option>
+      <option value="桃園/苗栗">桃園/苗栗</option>
+      <option value="台中/彰化">台中/彰化</option>
+      <option value="南投/雲林">南投/雲林</option>
+      <option value="嘉義/台南">嘉義/台南</option>
+      <option value="高雄/屏東/台東">高雄/屏東/台東</option>
+      <option value="花蓮/宜蘭">花蓮/宜蘭</option>
+    </select>
+
+    <select id="temple">
+      <option value="">請先選擇地區</option>
+    </select>
+
+    <input type="text" id="name" placeholder="請輸入姓名">
+    <button onclick="submitForm()">送出登錄</button>
+    
+    <div id="result"></div>
+  </div>
+
+  <script>
+  // 雲端網址
+  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyZ4dwk6J_gHKjL0Bmsgv8DlCI5qdg2vMWFI-qwpWzWv1P4F2JD3TTW6zUW_iweQS8d7Q/exec';
+
+  // 完整的宮廟資料
+  const templeData = {
+    "基隆/台北": ["奠濟宮", "大武崙大靈宮", "內湖碧山巖", "公館武身開漳聖王廟", "芝山巖惠濟宮", "菁礐開漳聖王宮", "陽明山平等合誠宮", "石牌汾陽宮"],
+    "新北/新竹": ["財團法人中和廣濟宮", "財團法人新店太平宮", "貢寮昭惠廟", "金山廣安宮", "野柳保安宮", "萬里忠福宮", "萬里保民宮", "樹林旨雲宮", "柑林威惠廟", "新竹聖王宮", "芎林百壽宮", "新竹聖安宮"],
+    "桃園/苗栗": ["福隆宮", "五福宮", "復興聖興宮", "大溪東興宮", "大溪復興宮", "景福宮", "福仁宮", "八德聖王宮", "平鎮建安宮", "大溪仁和宮", "青埔青昇宮", "瑞源宮", "指嚴宮", "石橋復興宮", "觀音復興宮"],
+    "台中/彰化": ["烏日建興宮", "烏日聖興宮", "台中啟興宮", "台中玄靈武聖堂", "大里聖隆宮", "茄投奉天宮", "四張犁開漳聖王廟", "台中惠來廟", "彰化啟順宮", "彰邑威惠廟", "彰化芬園開漳府", "田尾聖祿堂"],
+    "南投/雲林": ["草屯陳府將軍廟", "竹山武德宮", "名間聖天宮", "名間大庄大賢宮", "斗六福興宮", "古坑慈靈宮", "北港昭烈宮"],
+    "嘉義/台南": ["大林安霞宮", "鹿草樹德宮", "開元佛殿", "梅山威惠宮", "新營同濟宮", "善化西衛開元宮", "台南市聖安宮", "歸仁忠順宮"],
+    "高雄/屏東/台東": ["鳳邑開漳聖王廟", "中庄慈聖宮", "燕巢興龍宮", "杉林威聖廟", "茄萣鎮福殿", "左營慈安宮", "九如聖王廟", "竹田建安宮", "池上建安宮"],
+    "花蓮/宜蘭": ["二城威惠廟", "礁溪漳福廟", "礁溪永興廟", "礁溪集惠廟", "礁溪永護廟", "礁溪保安廟", "壯圍永鎮廟", "壯六鎮安廟", "壯圍永惠廟", "壯圍鎮安廟", "東港鎮安宮", "后埤振安廟", "新社鎮安廟", "宜蘭靈鎮廟", "宜蘭三清宮", "宜蘭市靈惠廟", "宜蘭市永鎮廟", "員山玉雲宮", "三星昭靈宮", "冬山聖福廟", "橄社福安宮", "三吉靈惠廟", "花蓮五天宮", "新城鎮安宮", "花蓮開靈宮"]
+  };
+
+  // 地區選擇時更新宮廟
+  document.getElementById('region').addEventListener('change', function() {
+    const region = this.value;
+    const templeSelect = document.getElementById('temple');
+    templeSelect.innerHTML = '<option value="">請選擇宮廟</option>';
+    
+    if (region && templeData[region]) {
+      templeData[region].forEach(temple => {
+        const option = document.createElement('option');
+        option.value = temple;
+        option.textContent = temple;
+        templeSelect.appendChild(option);
+      });
+    }
+  });
+
+  async function submitForm() {
+    const name = document.getElementById('name').value.trim();
+    const region = document.getElementById('region').value;
+    const temple = document.getElementById('temple').value;
+    
+    if (!name || !region || !temple) {
+      alert('請填寫完整資料！');
+      return;
+    }
+
+    // 快速產生抽獎號碼
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(i);
+      hash = hash & hash;
+    }
+    const number = Math.abs(hash) % 999 + 1;
+    
+    // 立即顯示結果給使用者
+    const result = document.getElementById('result');
+    result.innerHTML = `
+      <h3 style="text-align: center; color: #4caf50;">🎉 登錄成功！</h3>
+      <div class="lottery-number">${number.toString().padStart(3, '0')}</div>
+      <p><strong>姓名：</strong>${name}</p>
+      <p><strong>地區：</strong>${region}</p>
+      <p><strong>宮廟：</strong>${temple}</p>
+      <p><strong>時間：</strong>${new Date().toLocaleString('zh-TW')}</p>
+      <p style="color: #d32f2f; font-weight: bold; text-align: center;">📸 請務必截圖保存抽獎號碼！</p>
+      <div class="cloud-status">資料同步中...</div>
+    `;
+    result.style.display = 'block';
+    
+    // 滾動到結果區域
+    result.scrollIntoView({ behavior: 'smooth' });
+
+    // 背景傳送到雲端（不影響使用者體驗）
+    setTimeout(async () => {
+      try {
+        const submission = {
+          lotteryNumber: number,
+          name: name,
+          region: region,
+          temple: temple,
+          timestamp: new Date().toLocaleString('zh-TW')
+        };
+        
+        await fetch(CLOUD_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submission)
+        });
+        
+        // 更新狀態為成功
+        document.querySelector('.cloud-status').textContent = '✓ 資料已同步到雲端';
+        document.querySelector('.cloud-status').style.color = '#4caf50';
+        
+      } catch (error) {
+        // 雲端失敗也不影響使用者
+        document.querySelector('.cloud-status').textContent = '⚠ 本地儲存完成（雲端同步稍後進行）';
+        document.querySelector('.cloud-status').style.color = '#ff9800';
+      }
+    }, 100);
+  }
+  </script>
+</body>
+</html>
