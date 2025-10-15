@@ -1,0 +1,52 @@
+<script>
+async function submitForm() {
+  const name = document.getElementById('name').value.trim();
+  const region = document.getElementById('region').value;
+  const temple = document.getElementById('temple').value;
+  
+  if (!name || !region || !temple) {
+    alert('請填寫完整資料！');
+    return;
+  }
+
+  // 快速產生抽獎號碼
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash = hash & hash;
+  }
+  const number = Math.abs(hash) % 999 + 1;
+  
+  // 立即顯示結果給使用者
+  const result = document.getElementById('result');
+  result.innerHTML = `
+    <h3 style="text-align: center; color: #4caf50;">🎉 登錄成功！</h3>
+    <div class="lottery-number">${number.toString().padStart(3, '0')}</div>
+    <p><strong>姓名：</strong>${name}</p>
+    <p><strong>地區：</strong>${region}</p>
+    <p><strong>宮廟：</strong>${temple}</p>
+    <p><strong>時間：</strong>${new Date().toLocaleString('zh-TW')}</p>
+    <p style="color: #d32f2f; font-weight: bold; text-align: center;">📸 請務必截圖保存抽獎號碼！</p>
+  `;
+  result.style.display = 'block';
+  
+  // 背景傳送到雲端（不影響使用者）
+  setTimeout(() => {
+    const submission = {
+      lotteryNumber: number,
+      name: name,
+      region: region,
+      temple: temple,
+      timestamp: new Date().toLocaleString('zh-TW')
+    };
+    
+    fetch('https://script.google.com/macros/s/AKfycbyZ4dwk6J_gHKjL0Bmsgv8DlCI5qdg2vMWFI-qwpWzWv1P4F2JD3TTW6zUW_iweQS8d7Q/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submission)
+    }).catch(error => {
+      console.log('雲端備份失敗，但不影響使用者');
+    });
+  }, 100);
+}
+</script>
